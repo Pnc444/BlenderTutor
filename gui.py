@@ -2,7 +2,9 @@ import threading
 import customtkinter
 import mss
 from ai import get_response
+from blender_client import check_blender_connection, get_blender_client
 from dedup import FrameGate
+from tutor import get_tutor_response
 from screen import screen_capture_image
 from watch_loop import WatchLoop
 
@@ -58,11 +60,24 @@ class ControlsPanel(customtkinter.CTkFrame):
             font=customtkinter.CTkFont(size=11),
         )
         self.watch_label.grid(
-            row=2, column=0, columnspan=3, padx=20, pady=(0, 12), sticky="w"
+            row=2, column=0, columnspan=3, padx=20, pady=(0, 4), sticky="w"
+        )
+
+        self.blender_label = customtkinter.CTkLabel(
+            self,
+            text="Blender: checking…",
+            anchor="w",
+            font=customtkinter.CTkFont(size=11),
+        )
+        self.blender_label.grid(
+            row=3, column=0, columnspan=3, padx=20, pady=(0, 12), sticky="w"
         )
 
     def set_watch_label(self, text):
         self.watch_label.configure(text=text)
+
+    def set_blender_label(self, text):
+        self.blender_label.configure(text=text)
 
     def get_context(self):
         return self.context_entry.get().strip()
@@ -140,6 +155,9 @@ class App(customtkinter.CTk):
 
         self.position_panel()
 
+        get_blender_client().host = self.config["blender_host"]
+        get_blender_client().port = self.config["blender_port"]
+
         # Background capture + dedup (same monitor as the panel). Stops on window close.
         self._frame_gate = FrameGate(max_hamming=6)
         self._watch_loop = WatchLoop(
@@ -151,6 +169,7 @@ class App(customtkinter.CTk):
         self._watch_loop.start()
         self.protocol("WM_DELETE_WINDOW", self._on_app_close)
         self.after(1000, self._poll_watch_metrics)
+        self.after(500, self._poll_blender_connection)
 
     def _on_watch_forward(self, _img):
         """Hook when dedup says the screen changed enough to forward a frame."""
@@ -174,6 +193,21 @@ class App(customtkinter.CTk):
             self.controls_panel.set_watch_label(line)
         self.after(1000, self._poll_watch_metrics)
 
+    def _poll_blender_connection(self):
+        try:
+            if not self.winfo_exists():
+                return
+        except Exception:
+            return
+        if self.config.get("use_blender"):
+            ok, msg = check_blender_connection()
+            prefix = "Blender"
+            line = f"{prefix} • {msg}" if ok else f"{prefix} • not connected — {msg}"
+            self.controls_panel.set_blender_label(line)
+        else:
+            self.controls_panel.set_blender_label("Blender • disabled (USE_BLENDER=false)")
+        self.after(5000, self._poll_blender_connection)
+
     def _on_app_close(self):
         wl = getattr(self, "_watch_loop", None)
         if wl is not None:
@@ -193,7 +227,17 @@ class App(customtkinter.CTk):
 
     def run_ai_request(self):
         try:
-            response = get_response(self.config, user_context=self.user_context)
+            use_blender = self.config.get("use_blender") and not self.config["use_local"]
+            if use_blender:
+                ok, _ = check_blender_connection()
+                if not ok:
+                    raise RuntimeError(
+                        "Blender is not connected. Open Blender, enable the MCP addon, "
+                        "and click Connect (port 9876)."
+                    )
+                response = get_tutor_response(self.config, user_context=self.user_context)
+            else:
+                response = get_response(self.config, user_context=self.user_context)
             self.after(0, lambda: self.show_response(response))
         except Exception as e:
             error_text = f"Error: {e}"
