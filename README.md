@@ -2,18 +2,8 @@
 
 Fork of [ScreenReaderAI](https://github.com/Pnc444/ScreenReaderAI) — same core (side panel + screen capture + vision AI), with **Blender MCP** integration added on this branch of the product.
 
-| Repo | Focus |
-|------|--------|
-| **ScreenReaderAI** | General desktop screen assistant |
-| **BlenderTutor** (this repo) | Same panel + screen help, plus live Blender demos via MCP (coming next) |
 
-## Shared core (today)
-
-- CustomTkinter side panel (`gui.py`)
-- Screen capture + dedup (`screen.py`, `dedup.py`, `watch_loop.py`)
-- Anthropic or Ollama vision (`ai.py`)
-
-## Blender-specific (this repo)
+## Blender-specific (this repo) Changed From ScreenReaderAI to change project to be more blender oriented
 
 - [`.cursor/mcp.json`](.cursor/mcp.json) — Cursor MCP bridge (`uvx --python 3.12 blender-mcp`)
 - Blender addon: [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) — install `addon.py`, connect on port 9876
@@ -33,12 +23,6 @@ copy .env.example .env
 python main.py
 ```
 
-## Blender MCP smoke test (Cursor)
-
-1. Blender open → BlenderMCP sidebar → **Connect** (9876)
-2. Open this folder in Cursor → reload → **Settings → MCP** → `blender` connected
-3. Agent chat: *"Using Blender MCP, add a cube."*
-
 ## Build Windows EXE
 
 ```powershell
@@ -48,6 +32,3 @@ venv\Scripts\activate
 
 Output: `dist\BlenderTutor.exe`
 
-## Keeping repos in sync
-
-When you improve shared core (capture, dedup, panel UI), port changes **ScreenReaderAI → BlenderTutor** (or the reverse) until you extract a shared package. For now, duplicate and cherry-pick is fine.
