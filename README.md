@@ -48,6 +48,4 @@ venv\Scripts\activate
 
 Output: `dist\BlenderTutor.exe`
 
-## Keeping repos in sync
 
-When you improve shared core (capture, dedup, panel UI), port changes **ScreenReaderAI → BlenderTutor** (or the reverse) until you extract a shared package. For now, duplicate and cherry-pick is fine.
